@@ -2,6 +2,7 @@ using ApiEcommerce.Constants;
 using ApiEcommerce.Data;
 using ApiEcommerce.Repository;
 using ApiEcommerce.Repository.IRepository;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -97,8 +98,58 @@ namespace ApiEcommerce
                         new List<string>() // lista vacia de scopes
                       }
                     });
+                    // agregando documentacion de API
+                    options.SwaggerDoc("v1", new OpenApiInfo
+                    {
+                        Version = "v1",
+                        Title = "ApiEcommerce V1",
+                        Description = "API para gestionar Productos  y Usuarios",
+                        TermsOfService = new Uri("http://example.com/terms"),
+                        Contact = new OpenApiContact
+                        {
+                            Name = "SEITIN",
+                            Url = new Uri("https://seitin.com.gt")
+                        },
+                        License = new OpenApiLicense
+                        {
+                            Name = "Licencia de Uso",
+                            Url = new Uri("https://seitin.com.gt/LicenseApi")
+                        }
+                    });
+                    //
+                    options.SwaggerDoc("v2", new OpenApiInfo
+                    {
+                        Version = "v2",
+                        Title = "ApiEcommerce V2",
+                        Description = "API para gestionar Productos  y Usuarios",
+                        TermsOfService = new Uri("http://example.com/terms"),
+                        Contact = new OpenApiContact
+                        {
+                            Name = "SEITIN",
+                            Url = new Uri("https://seitin.com.gt")
+                        },
+                        License = new OpenApiLicense
+                        {
+                            Name = "Licencia de Uso",
+                            Url = new Uri("https://seitin.com.gt/LicenseApi")
+                        }
+                    });
                 }
             );
+
+            // versionamiento de API
+            var apiVersioningBuilder = builder.Services.AddApiVersioning(opt =>
+            {
+                opt.AssumeDefaultVersionWhenUnspecified = true;
+                opt.DefaultApiVersion = new ApiVersion(1, 0); //1,0
+                opt.ReportApiVersions = true;
+                //opt.ApiVersionReader = ApiVersionReader.Combine(new QueryStringApiVersionReader("api-version")); //?api-version
+            });
+            apiVersioningBuilder.AddApiExplorer(opt =>
+            {
+                opt.GroupNameFormat = "'v'VVV"; // v1, v2, v3
+                opt.SubstituteApiVersionInUrl = true; // api/v{version}/products
+            });
 
             // Cors, para acceder o aceptar petitiones en diferentes dominios
             builder.Services.AddCors(opt =>
@@ -116,7 +167,12 @@ namespace ApiEcommerce
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                // modificando UserSwagger
+                app.UseSwaggerUI(opt =>
+                {
+                    opt.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+                    opt.SwaggerEndpoint("/swagger/v2/swagger.json", "v2");
+                });
             }
 
             app.UseHttpsRedirection();

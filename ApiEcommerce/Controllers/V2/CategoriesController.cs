@@ -2,16 +2,16 @@
 using ApiEcommerce.Models;
 using ApiEcommerce.Models.Dtos;
 using ApiEcommerce.Repository.IRepository;
+using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ApiEcommerce.Controllers
+namespace ApiEcommerce.Controllers.V2
 {
     [Authorize(Roles = "Admin")]
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiVersion("2.0")]
     [ApiController]
     public class CategoriesController : ControllerBase
     {
@@ -23,15 +23,15 @@ namespace ApiEcommerce.Controllers
             _categoryRepository = categoryRepository;
             _mapper = mapper;
         }
-
-        // GET listado categorias
+        
+        // GET listado categorias ordenado por ID esto ya en la version 2.0
         [AllowAnonymous]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult GetCategories()
+        public IActionResult GetCategoriesOrderById()
         {
-            var categories = _categoryRepository.GetCategories();
+            var categories = _categoryRepository.GetCategories().OrderBy(cat => cat.Id);
             var categoriesDto = new List<CategoryDto>();
             foreach (var category in categories)
             {
