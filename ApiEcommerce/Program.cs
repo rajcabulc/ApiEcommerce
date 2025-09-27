@@ -1,9 +1,11 @@
 using ApiEcommerce.Constants;
 using ApiEcommerce.Data;
+using ApiEcommerce.Models;
 using ApiEcommerce.Repository;
 using ApiEcommerce.Repository.IRepository;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -34,6 +36,11 @@ namespace ApiEcommerce
             builder.Services.AddScoped<IProductRepository, ProductRepository>(); //
             builder.Services.AddScoped<IUserRepository, UserRepository>(); //
             builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
+            // agregando para gestionar usuarios y roles
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
 
             // Authentication
             var secretKey = builder.Configuration.GetValue<string>("ApiSettings:SecretKey");
@@ -116,7 +123,7 @@ namespace ApiEcommerce
                             Url = new Uri("https://seitin.com.gt/LicenseApi")
                         }
                     });
-                    //
+                    // v2
                     options.SwaggerDoc("v2", new OpenApiInfo
                     {
                         Version = "v2",

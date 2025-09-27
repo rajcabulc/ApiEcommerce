@@ -24,6 +24,7 @@ namespace ApiEcommerce.Controllers
 
         //
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetUsers()
@@ -35,12 +36,12 @@ namespace ApiEcommerce.Controllers
         }
 
         // GET by Id
-        [HttpGet("{Id:int}", Name = "GetUser")]
+        [HttpGet("{Id}", Name = "GetUser")]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult GetUser(int Id)
+        public IActionResult GetUser(string Id)
         {
             var user = _userRepository.GetUser(Id);
             if (user == null)

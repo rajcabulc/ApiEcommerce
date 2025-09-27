@@ -1,5 +1,6 @@
 ﻿using ApiEcommerce.Models;
 using ApiEcommerce.Models.Dtos;
+using ApiEcommerce.Models.Dtos.User;
 using AutoMapper;
 
 namespace ApiEcommerce.Mapping
@@ -12,6 +13,8 @@ namespace ApiEcommerce.Mapping
             CreateMap<User, CreateUserDto>().ReverseMap();
             CreateMap<User, UserLoginDto>().ReverseMap();
             CreateMap<User, UserLoginResponseDto>().ReverseMap();
+            CreateMap<ApplicationUser, UserDataDto>().ReverseMap(); //
+            CreateMap<ApplicationUser, UserDto>().ReverseMap(); //
         }
     }
 }
