@@ -62,7 +62,7 @@ namespace ApiEcommerce.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public IActionResult CreateProduct([FromBody] CreateProductDto createProductDto)
+        public IActionResult CreateProduct([FromForm] CreateProductDto createProductDto)
         {
             if (createProductDto == null)
                 return BadRequest(ModelState);
@@ -79,6 +79,12 @@ namespace ApiEcommerce.Controllers
             }
 
             var product = _mapper.Map<Product>(createProductDto);
+            // agregando imagen
+            if(createProductDto.Image != null)
+                UploadProductImage(createProductDto, product);
+            else
+                product.ImgUrl = "https://placehold.co/300x300";
+
             if (!_productRepository.CreateProduct(product))
             {
                 ModelState.AddModelError("CustomError", $"Algo salio mal al guardar el registro {product.Name}");
@@ -158,7 +164,7 @@ namespace ApiEcommerce.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public IActionResult UpdateProduct(int productId, [FromBody] UpdateProductDto updateProductDto)
+        public IActionResult UpdateProduct(int productId, [FromForm] UpdateProductDto updateProductDto)
         {
             if (updateProductDto == null)
                 return BadRequest(ModelState);
@@ -176,6 +182,12 @@ namespace ApiEcommerce.Controllers
 
             var product = _mapper.Map<Product>(updateProductDto);
             product.ProductId = productId;
+            // agregando imagen
+            if(updateProductDto.Image != null)
+                UploadProductImage(updateProductDto, product);
+            else
+                product.ImgUrl = "https://placehold.co/300x300";
+
             if (!_productRepository.UpdateProduct(product))
             {
                 ModelState.AddModelError("CustomError", $"Algo salio mal al actualizar el registro {product.Name}");
@@ -183,6 +195,25 @@ namespace ApiEcommerce.Controllers
             }
 
             return NoContent();
+        }
+
+        private void UploadProductImage(dynamic productDto, Product product)
+        {
+            string fileName = product.ProductId + Guid.NewGuid().ToString() + Path.GetExtension(productDto.Image.FileName); // generar un nombre unico
+            var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ProductsImages"); // carpeta donde se guardaran las imagenes
+            if (!Directory.Exists(imagesFolder)) // si la carpeta no existe, crearla
+                Directory.CreateDirectory(imagesFolder);
+            var filePath = Path.Combine(imagesFolder, fileName); // ruta completa del archivo
+            FileInfo file = new FileInfo(filePath);
+            if (file.Exists) // si el archivo ya existe, eliminarlo
+                file.Delete();
+
+            using var fileStream = new FileStream(filePath, FileMode.Create); // crear el archivo
+            productDto.Image.CopyTo(fileStream); // copiar la imagen al archivo
+
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            product.ImgUrl = $"{baseUrl}/ProductsImages/{fileName}"; // guardar la url completa en la base de datos
+            product.ImgUrlLocal = filePath; // guardar la ruta local en la base de datos
         }
 
         // DELETE

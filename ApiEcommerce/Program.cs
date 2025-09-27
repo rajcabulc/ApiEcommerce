@@ -182,6 +182,8 @@ namespace ApiEcommerce
                 });
             }
 
+            app.UseStaticFiles(); // para poder usar archivos estaticos como imagenes en este caso
+
             app.UseHttpsRedirection();
 
             app.UseCors(PolicyNames.AllowSpecificOrigins); //
