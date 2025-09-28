@@ -8,6 +8,8 @@ namespace ApiEcommerce.Repository.IRepository
         //        → Devuelve todos los productos
         //          en ICollection del tipo Product.
         ICollection<Product> GetProducts();
+        ICollection<Product> GetProductsInPages(int pageNumber, int pageSize);
+        int GetTotalProducts();
         //        → Recibe un categoryId y devuelve los productos
         //          de esa categoría en ICollection del tipo Product.
         ICollection<Product> GetProductsForCategory(int categoryId);

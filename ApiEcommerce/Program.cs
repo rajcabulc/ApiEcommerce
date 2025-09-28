@@ -1,12 +1,13 @@
 using ApiEcommerce.Constants;
 using ApiEcommerce.Data;
+using ApiEcommerce.Mapping;
 using ApiEcommerce.Models;
 using ApiEcommerce.Repository;
 using ApiEcommerce.Repository.IRepository;
 using Asp.Versioning;
+using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -23,9 +24,15 @@ namespace ApiEcommerce
             // Add services to the container.
             // connection to database
             var dbConnString = builder.Configuration.GetConnectionString("ConnDb");
-            builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(dbConnString));
+            builder.Services.AddDbContext<AppDbContext>(options =>
+              options.UseSqlServer(dbConnString)
+              .UseSeeding((context, _) =>
+              {
+                  var appContext = (AppDbContext)context;
+                  DataSeeder.SeedData(appContext);
+              })
+            );
 
-            //
             builder.Services.AddResponseCaching(opt =>
             {
                 opt.MaximumBodySize = 1024 * 1024; // 1 MB
@@ -35,7 +42,9 @@ namespace ApiEcommerce
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>(); //
             builder.Services.AddScoped<IUserRepository, UserRepository>(); //
-            builder.Services.AddAutoMapper(typeof(Program).Assembly);
+            // builder.Services.AddAutoMapper(typeof(Program).Assembly); // REMOVE
+            builder.Services.AddMapster(); // ADD Mapster DI
+            MapsterConfig.RegisterMappings(); // Register Mapster mappings
 
             // agregando para gestionar usuarios y roles
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -71,17 +80,14 @@ namespace ApiEcommerce
                 opt.CacheProfiles.Add(CacheProfiles.Default10, CacheProfiles.Profile10);
                 opt.CacheProfiles.Add(CacheProfiles.Default20, CacheProfiles.Profile20);
             });
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            // incorporando autenticacion en swagger
             builder.Services.AddSwaggerGen(
                 options =>
                 {
-                    // aniadiendo esquema de seguridad Bearer
                     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                     {
-                        Description = "Nuestra API utiliza la Autenticación JWT usando el esquema Bearer. \n\r\n\r" +
-                                    "Ingresa a continuación el token generado en login.\n\r\n\r" +
+                        Description = "Nuestra API utiliza la Autenticacion JWT usando el esquema Bearer. \n\r\n\r" +
+                                    "Ingresa a continuacion el token generado en login.\n\r\n\r" +
                                     "Ejemplo: \"12345abcdef\"",
                         Name = "Authorization", // encabezado de la peticion
                         In = ParameterLocation.Header,
@@ -105,7 +111,6 @@ namespace ApiEcommerce
                         new List<string>() // lista vacia de scopes
                       }
                     });
-                    // agregando documentacion de API
                     options.SwaggerDoc("v1", new OpenApiInfo
                     {
                         Version = "v1",
@@ -123,7 +128,6 @@ namespace ApiEcommerce
                             Url = new Uri("https://seitin.com.gt/LicenseApi")
                         }
                     });
-                    // v2
                     options.SwaggerDoc("v2", new OpenApiInfo
                     {
                         Version = "v2",
@@ -150,7 +154,6 @@ namespace ApiEcommerce
                 opt.AssumeDefaultVersionWhenUnspecified = true;
                 opt.DefaultApiVersion = new ApiVersion(1, 0); //1,0
                 opt.ReportApiVersions = true;
-                //opt.ApiVersionReader = ApiVersionReader.Combine(new QueryStringApiVersionReader("api-version")); //?api-version
             });
             apiVersioningBuilder.AddApiExplorer(opt =>
             {
@@ -158,23 +161,20 @@ namespace ApiEcommerce
                 opt.SubstituteApiVersionInUrl = true; // api/v{version}/products
             });
 
-            // Cors, para acceder o aceptar petitiones en diferentes dominios
             builder.Services.AddCors(opt =>
             {
                 opt.AddPolicy(PolicyNames.AllowSpecificOrigins,
                     builder =>
                     {
-                        builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader(); // en origen(*) poner la url del front end o las que se quieran permitir
+                        builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
                     });
             });
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                // modificando UserSwagger
                 app.UseSwaggerUI(opt =>
                 {
                     opt.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
@@ -182,20 +182,13 @@ namespace ApiEcommerce
                 });
             }
 
-            app.UseStaticFiles(); // para poder usar archivos estaticos como imagenes en este caso
-
+            app.UseStaticFiles();
             app.UseHttpsRedirection();
-
-            app.UseCors(PolicyNames.AllowSpecificOrigins); //
-
-            app.UseResponseCaching(); //
-            //
-            app.UseAuthentication(); //
-
+            app.UseCors(PolicyNames.AllowSpecificOrigins);
+            app.UseResponseCaching();
+            app.UseAuthentication();
             app.UseAuthorization();
-
             app.MapControllers();
-
             app.Run();
         }
     }

@@ -3,13 +3,13 @@ using ApiEcommerce.Models;
 using ApiEcommerce.Models.Dtos;
 using ApiEcommerce.Models.Dtos.User;
 using ApiEcommerce.Repository.IRepository;
-using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Mapster;
 
 namespace ApiEcommerce.Repository
 {
@@ -19,15 +19,13 @@ namespace ApiEcommerce.Repository
         private readonly string? secretKey;
         private readonly UserManager<ApplicationUser> _userManager; //
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IMapper _mapper;
         public UserRepository(AppDbContext dbCon, IConfiguration configuration, UserManager<ApplicationUser> userManager, 
-            RoleManager<IdentityRole> roleManager, IMapper mapper)
+            RoleManager<IdentityRole> roleManager)
         {
             _dbCon = dbCon;
             secretKey = configuration.GetValue<string>("ApiSettings:SecretKey");
             _userManager = userManager;
             _roleManager = roleManager;
-            _mapper = mapper;
         }
         public ApplicationUser? GetUser(string id)
         {
@@ -47,7 +45,6 @@ namespace ApiEcommerce.Repository
         // login de usuario
         public async Task<UserLoginResponseDto> Login(UserLoginDto userLoginDto)
         {
-            // verificar si el username es nulo o vacio
             if (string.IsNullOrEmpty(userLoginDto.Username))
             {
                 return new UserLoginResponseDto()
@@ -57,7 +54,6 @@ namespace ApiEcommerce.Repository
                     Message = "El Username es requerido"
                 };
             }
-            // buscar el username en la db y verificar que exista
             var user = await _dbCon.ApplicationUsers.FirstOrDefaultAsync<ApplicationUser>(u => u.UserName != null && u.UserName.ToLower().Trim() == userLoginDto.Username.ToLower().Trim());
             if(user == null)
             {
@@ -88,7 +84,6 @@ namespace ApiEcommerce.Repository
                     Message = "Las Credenciales son Incorrectas"
                 };
             }
-            // Generando el JWT
             var handlerToken = new JwtSecurityTokenHandler();
             if (string.IsNullOrWhiteSpace(secretKey))
                 throw new InvalidOperationException("SecretKey no esta Configurada");
@@ -112,7 +107,7 @@ namespace ApiEcommerce.Repository
             return new UserLoginResponseDto()
             {
                 Token = handlerToken.WriteToken(token),
-                User = _mapper.Map<UserDataDto>(user),
+                User = user.Adapt<UserDataDto>(),
                 Message = "Usuario Logeado Correctamente"
             };
         }
@@ -120,7 +115,6 @@ namespace ApiEcommerce.Repository
         // Registro de un nuevo usuario
         public async Task<UserDataDto> Register(CreateUserDto createUserDto)
         {
-            // verificar si el username es nulo o vacio
             if (string.IsNullOrEmpty(createUserDto.Username))
                 throw new ArgumentException("El Username es requerido");
 
@@ -148,7 +142,7 @@ namespace ApiEcommerce.Repository
                 await _userManager.AddToRoleAsync(user, userRole);
                 var createdUser = _dbCon.ApplicationUsers.FirstOrDefault(u => u.UserName == createUserDto.Username);
 
-                return _mapper.Map<UserDataDto>(createdUser);
+                return createdUser.Adapt<UserDataDto>();
             }
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
             throw new ApplicationException($"No se puedo realizar el Registro: {errors}");

@@ -70,6 +70,16 @@ namespace ApiEcommerce.Repository
             return _dbCon.Products.Include(p => p.Category).Where(p => p.CategoryId == categoryId).OrderBy(p => p.Name).ToList();
         }
 
+        public ICollection<Product> GetProductsInPages(int pageNumber, int pageSize)
+        {
+            return _dbCon.Products.OrderBy(p => p.ProductId).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+        }
+
+        public int GetTotalProducts()
+        {
+            return _dbCon.Products.Count();
+        }
+
         public bool ProductExists(int id)
         {
             if (id <= 0)
